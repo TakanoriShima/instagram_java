@@ -72,7 +72,7 @@
                     <th class="report_date">コメント</th>
 
                 </tr>
-                <c:forEach var="comment" items="${list}" varStatus="status">
+                <c:forEach var="comment" items="${post.commentList}" varStatus="status">
                     <tr class="row${status.count % 2}">
                         <td class="report_name"><c:out value="${comment.user.name}" /></td>
                         <td class="report_date"><fmt:formatDate

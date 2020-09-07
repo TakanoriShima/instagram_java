@@ -3,8 +3,11 @@ package controllers.posts;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -15,6 +18,7 @@ import javax.servlet.http.Part;
 
 import models.Post;
 import models.User;
+import models.validators.PostValidator;
 import utils.DBUtil;
 import utils.EncryptUtil;
 
@@ -61,10 +65,9 @@ public class PostsCreateServlet extends HttpServlet {
             System.out.println("filePath!!!" + filePath);
 
             File uploadDir = new File(getServletContext().getRealPath("/uploads/"));
-            if (!uploadDir.exists()){
+            if (!uploadDir.exists()) {
                 uploadDir.mkdir();
             }
-
 
             part.write(filePath);
 
@@ -84,16 +87,35 @@ public class PostsCreateServlet extends HttpServlet {
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
             p.setCreated_at(currentTime);
 
-            em.getTransaction().begin();
-            em.persist(p);
-            em.getTransaction().commit();
+            List<String> errors = PostValidator.validate(p);
+            System.out.println("ひひい");
+            if (errors.size() > 0) {
+                System.out.println("ふふふ");
+                em.close();
 
-            em.close();
+                //request.setAttribute("_token", request.getSession().getId());
+                //request.setAttribute("post", p);
+                request.setAttribute("errors", errors);
+                System.out.println("あああ");
 
-            request.getSession().setAttribute("flush", "新規投稿が完了しました。");
+                RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
+                rd.forward(request, response);
+            } else {
+                em.getTransaction().begin();
+                em.persist(p);
+                em.getTransaction().commit();
+                em.close();
+                request.getSession().setAttribute("flush", "新規投稿が完了しました。");
 
-            response.sendRedirect(request.getContextPath() + "/top");
+                response.sendRedirect(request.getContextPath() + "/top");
+            }
 
+        }else{
+            List<String> errors = new ArrayList<>();
+            errors.add("画像を選択してください");
+            request.getSession().setAttribute("errors", errors);
+            RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
+            rd.forward(request, response);
         }
     }
 

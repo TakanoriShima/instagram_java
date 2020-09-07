@@ -2,6 +2,7 @@
     pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
 <c:import url="../layout/app.jsp">
     <c:param name="content">
         <c:if test="${flush != null}">
@@ -24,7 +25,7 @@
                         <td class="report_name"><c:out value="${post.user.name}" /></td>
                         <td class="report_date"><fmt:formatDate
                                 value='${post.created_at}' pattern='yyyy-MM-dd HH:mm' /></td>
-                        <td class="report_title">${post.title}</td>
+                        <td class="report_title">${post.title}(コメント件数: ${fn:length(post.commentList)})</td>
 
                         <td class="report_action"><a
                             href="<c:url value='/posts/show?id=${post.id}' />">詳細を見る</a></td>
