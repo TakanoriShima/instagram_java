@@ -46,7 +46,8 @@
                                     <c:otherwise>
                                     画像はありません。
                                 </c:otherwise>
-                                </c:choose></td>
+                                </c:choose>
+                             </td>
                         </tr>
 
 
