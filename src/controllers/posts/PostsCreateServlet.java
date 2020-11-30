@@ -16,6 +16,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+
 import models.Post;
 import models.User;
 import models.validators.PostValidator;
@@ -28,115 +34,156 @@ import utils.EncryptUtil;
 @MultipartConfig
 @WebServlet("/posts/create")
 public class PostsCreateServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    /**
-     * @see HttpServlet#HttpServlet()
-     */
-    public PostsCreateServlet() {
-        super();
-        // TODO Auto-generated constructor stub
-    }
+	/**
+	 * @see HttpServlet#HttpServlet()
+	 */
+	public PostsCreateServlet() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
 
-    /**
-     * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        // TODO Auto-generated method stub
-        response.getWriter().append("Served at: ").append(request.getContextPath());
-    }
+	/**
+	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse
+	 *      response)
+	 */
+	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
+		// TODO Auto-generated method stub
+		response.getWriter().append("Served at: ").append(request.getContextPath());
+	}
 
-    /**
-     * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
-     */
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+	/**
+	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse
+	 *      response)
+	 */
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 
-        // 画像アップロード
-        Part part = request.getPart("image");
+		// 画像アップロード
+		Part part = request.getPart("image");
 
-        if (part.getSize() != 0) {
+		if (part.getSize() != 0) {
 
-            String filename = getFileName(part);
+			// localに画像をアップロード
+			String filename = getFileName(part);
 
-            String filePath = getServletContext().getRealPath("/uploads/") + filename;
+			String filePath = getServletContext().getRealPath("/photos/") + filename;
 
-            System.out.println("filePath!!!" + filePath);
+			// System.out.println("filePath!!!" + filePath);
+//
+			File uploadDir = new File(getServletContext().getRealPath("/photos/"));
+			if (!uploadDir.exists()) {
+				uploadDir.mkdir();
+			}
 
-            File uploadDir = new File(getServletContext().getRealPath("/uploads/"));
-            if (!uploadDir.exists()) {
-                uploadDir.mkdir();
-            }
+			part.write(filePath);
 
-            part.write(filePath);
+			try{
+				/* S3 */
+				String region = (String) this.getServletContext().getAttribute("region");
+				String awsAccessKey = (String) this.getServletContext().getAttribute("awsAccessKey");
+				String awsSecretKey = (String) this.getServletContext().getAttribute("awsSecretKey");
+				String bucketName = (String) this.getServletContext().getAttribute("bucketName");
 
-            EntityManager em = DBUtil.createEntityManager();
 
-            Post p = new Post();
+				// 認証情報を用意
+				AWSCredentials credentials = new BasicAWSCredentials(
+						// アクセスキー
+						awsAccessKey,
+						// シークレットキー
+						awsSecretKey);
 
-            //レポート作成者のidを取得
-            User login_user = (User) request.getSession().getAttribute("login_user");
-            p.setUser(login_user);
+				// クライアントを生成
+				AmazonS3 s3 = AmazonS3ClientBuilder.standard()
+						// 認証情報を設定
+						.withCredentials(new AWSStaticCredentialsProvider(credentials))
+						// リージョンを AP_NORTHEAST_1(東京) に設定
+						.withRegion(region).build();
 
-            p.setTitle(request.getParameter("title"));
-            p.setContent(request.getParameter("content"));
+				// === ファイルから直接アップロードする場合 ===
+				// アップロードするファイル
+				File file = new File(filePath);
+				// ファイルをアップロード
+				s3.putObject(
+						// アップロード先バケット名
+						bucketName,
+						// アップロード後のキー名
+						"photos/" + filename,
+						// ファイルの実体
+						file);
+			}catch(Exception e){
+				System.out.println("S3失敗");
+			}
 
-            p.setImage(filename);
+			// データベースに情報を保存
+			EntityManager em = DBUtil.createEntityManager();
 
-            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-            p.setCreated_at(currentTime);
+			Post p = new Post();
 
-            List<String> errors = PostValidator.validate(p);
-            System.out.println("ひひい");
-            if (errors.size() > 0) {
-                System.out.println("ふふふ");
-                em.close();
+			// レポート作成者のidを取得
+			User login_user = (User) request.getSession().getAttribute("login_user");
+			p.setUser(login_user);
 
-                //request.setAttribute("_token", request.getSession().getId());
-                //request.setAttribute("post", p);
-                request.setAttribute("errors", errors);
-                System.out.println("あああ");
+			p.setTitle(request.getParameter("title"));
+			p.setContent(request.getParameter("content"));
 
-                RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
-                rd.forward(request, response);
-            } else {
-                em.getTransaction().begin();
-                em.persist(p);
-                em.getTransaction().commit();
-                em.close();
-                request.getSession().setAttribute("flush", "新規投稿が完了しました。");
+			p.setImage(filename);
 
-                response.sendRedirect(request.getContextPath() + "/top");
-            }
+			Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+			p.setCreated_at(currentTime);
 
-        }else{
-            List<String> errors = new ArrayList<>();
-            errors.add("画像を選択してください");
-            request.getSession().setAttribute("errors", errors);
-            RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
-            rd.forward(request, response);
-        }
-    }
+			List<String> errors = PostValidator.validate(p);
+			System.out.println("ひひい");
+			if (errors.size() > 0) {
+				System.out.println("ふふふ");
+				em.close();
 
-    // 拡張子を変えずに、ランダムな名前のファイルを生成する
-    private String getFileName(Part part) {
-        String[] headerArrays = part.getHeader("Content-Disposition").split(";");
-        String fileName = null;
-        for (String head : headerArrays) {
-            if (head.trim().startsWith("filename")) {
-                fileName = head.substring(head.indexOf('"')).replaceAll("\"", "");
-            }
-        }
+				request.setAttribute("_token", request.getSession().getId());
+				request.setAttribute("post", p);
+				request.setAttribute("errors", errors);
+				System.out.println("あああ");
 
-        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+				RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
+				rd.forward(request, response);
+			} else {
+				em.getTransaction().begin();
+				em.persist(p);
+				em.getTransaction().commit();
+				em.close();
+				request.getSession().setAttribute("flush", "新規投稿が完了しました。");
 
-        String randName = EncryptUtil.getWordEncrypt(currentTime.toString());
-        String extension = fileName.substring(fileName.lastIndexOf("."));
+				response.sendRedirect(request.getContextPath() + "/top");
+			}
 
-        String rndFileName = randName + extension;
+		} else {
+			List<String> errors = new ArrayList<>();
+			errors.add("画像を選択してください");
+			request.getSession().setAttribute("errors", errors);
+			RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
+			rd.forward(request, response);
+		}
+	}
 
-        return rndFileName;
-    }
+	// 拡張子を変えずに、ランダムな名前のファイルを生成する
+	private String getFileName(Part part) {
+		String[] headerArrays = part.getHeader("Content-Disposition").split(";");
+		String fileName = null;
+		for (String head : headerArrays) {
+			if (head.trim().startsWith("filename")) {
+				fileName = head.substring(head.indexOf('"')).replaceAll("\"", "");
+			}
+		}
+
+		Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+
+		String randName = EncryptUtil.getWordEncrypt(currentTime.toString());
+		String extension = fileName.substring(fileName.lastIndexOf("."));
+
+		String rndFileName = randName + extension;
+
+		return rndFileName;
+	}
 
 }

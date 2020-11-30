@@ -40,7 +40,7 @@
                             <th>画像</th>
                             <td><c:choose>
                                     <c:when test="${post.image != null}">
-                                        <img src="/MyInstagram/uploads/${post.image}"
+                                        <img src="https://quark2galaxy2quark.s3.amazonaws.com/photos/${post.image}"
                                             style="width: 30%">
                                     </c:when>
                                     <c:otherwise>
