@@ -62,7 +62,11 @@ public class CommentsCreateServlet extends HttpServlet {
 
         em.close();
 
-        request.getSession().setAttribute("flush", "新規コメントの投稿が完了しました。");
+        if(request.getSession().getAttribute("flush") != null) {
+            request.getSession().removeAttribute("flush");
+        	request.getSession().setAttribute("flush", "新規コメントの投稿が完了しました。");
+        }
+
 
         response.sendRedirect(request.getContextPath() + "/posts/show?id=" + post.getId());
 

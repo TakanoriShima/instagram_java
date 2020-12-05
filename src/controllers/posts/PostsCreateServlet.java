@@ -72,7 +72,7 @@ public class PostsCreateServlet extends HttpServlet {
 			String filePath = getServletContext().getRealPath("/photos/") + filename;
 
 			// System.out.println("filePath!!!" + filePath);
-//
+			//
 			File uploadDir = new File(getServletContext().getRealPath("/photos/"));
 			if (!uploadDir.exists()) {
 				uploadDir.mkdir();
@@ -80,13 +80,12 @@ public class PostsCreateServlet extends HttpServlet {
 
 			part.write(filePath);
 
-			try{
+			try {
 				/* S3 */
 				String region = (String) this.getServletContext().getAttribute("region");
 				String awsAccessKey = (String) this.getServletContext().getAttribute("awsAccessKey");
 				String awsSecretKey = (String) this.getServletContext().getAttribute("awsSecretKey");
 				String bucketName = (String) this.getServletContext().getAttribute("bucketName");
-
 
 				// 認証情報を用意
 				AWSCredentials credentials = new BasicAWSCredentials(
@@ -113,7 +112,7 @@ public class PostsCreateServlet extends HttpServlet {
 						"photos/" + filename,
 						// ファイルの実体
 						file);
-			}catch(Exception e){
+			} catch (Exception e) {
 				System.out.println("S3失敗");
 			}
 
@@ -152,7 +151,11 @@ public class PostsCreateServlet extends HttpServlet {
 				em.persist(p);
 				em.getTransaction().commit();
 				em.close();
-				request.getSession().setAttribute("flush", "新規投稿が完了しました。");
+
+				if (request.getSession().getAttribute("flush") != null) {
+					request.getSession().removeAttribute("flush");
+					request.getSession().setAttribute("flush", "新規投稿が完了しました。");
+				}
 
 				response.sendRedirect(request.getContextPath() + "/top");
 			}

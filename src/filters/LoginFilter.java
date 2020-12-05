@@ -43,34 +43,37 @@ public class LoginFilter implements Filter {
         String context_path = ((HttpServletRequest) request).getContextPath();
         String servlet_path = ((HttpServletRequest) request).getServletPath();
 
-       System.out.println("ServletPath" + servlet_path);
-        if (!servlet_path.matches("/css.*")) { // CSSフォルダ内は認証処理から除外する
-            HttpSession session = ((HttpServletRequest) request).getSession();
+        // ログインしていないのに、ログイン後のリソースにアクセスする場合
+        HttpSession session = ((HttpServletRequest) request).getSession();
+        User u = (User) session.getAttribute("login_user");
 
-            // セッションスコープに保存された従業員（ログインユーザ）情報を取得
-            User u = (User) session.getAttribute("login_user");
+        System.out.println("User: " + u);
+        System.out.println("サーブレットパス: " + servlet_path);
 
-            if (!servlet_path.equals("/login")) { // ログイン画面以外について
-                // ログアウトしている状態であれば
-                // ログイン画面にリダイレクト
-                if (u == null) {
-                    session.setAttribute("flush", "不正アクセスです。ログインしてください。");
-                    ((HttpServletResponse) response).sendRedirect(context_path + "/login");
-
-                    return;
-                }
-
-            } else if (servlet_path.equals("/logout")) {
-
-            } else { // ログイン画面について
-                // ログインしているのにログイン画面を表示させようとした場合は
-                // システムのトップページにリダイレクト
-                if (u != null) {
-
-                    ((HttpServletResponse) response).sendRedirect(context_path + "/top");
-                    return;
-                }
-            }
+        if(u == null && servlet_path.equals("/top")){
+        	session.setAttribute("flush", "不正アクセスです。ログインしてください。");
+        	((HttpServletResponse) response).sendRedirect(context_path + "/login");
+           return;
+        }
+        if(u == null && servlet_path.equals("/posts/new")){
+        	session.setAttribute("flush", "不正アクセスです。ログインしてください。");
+        	((HttpServletResponse) response).sendRedirect(context_path + "/login");
+           return;
+        }
+        if(u == null && servlet_path.equals("/posts/show")){
+        	session.setAttribute("flush", "不正アクセスです。ログインしてください。");
+        	((HttpServletResponse) response).sendRedirect(context_path + "/login");
+           return;
+        }
+        if(u == null && servlet_path.equals("/posts/new")){
+        	session.setAttribute("flush", "不正アクセスです。ログインしてください。");
+        	((HttpServletResponse) response).sendRedirect(context_path + "/login");
+           return;
+        }
+        if(u == null && servlet_path.equals("/users/index")){
+        	session.setAttribute("flush", "不正アクセスです。ログインしてください。");
+        	((HttpServletResponse) response).sendRedirect(context_path + "/login");
+           return;
         }
 
         chain.doFilter(request, response);

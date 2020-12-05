@@ -11,34 +11,14 @@
             </div>
         </c:if>
 
-        <h2>投稿一覧</h2>
-        <table id="report_list">
-            <tbody>
-                <tr>
-                    <th class="report_name">氏名</th>
-                    <th class="report_date">日付</th>
-                    <th class="report_title">タイトル</th>
-                    <th class="report_title">操作</th>
-                </tr>
-                <c:forEach var="post" items="${posts}" varStatus="status">
-                    <tr class="row${status.count % 2}">
-                        <td class="report_name"><c:out value="${post.user.name}" /></td>
-                        <td class="report_date"><fmt:formatDate
-                                value='${post.created_at}' pattern='yyyy-MM-dd HH:mm' /></td>
-                        <td class="report_title">${post.title}(コメント件数: ${fn:length(post.commentList)})</td>
+		<h1>画像共有アプリ</h1>
 
-                        <td class="report_action"><a
-                            href="<c:url value='/posts/show?id=${post.id}' />">詳細を見る</a></td>
-                    </tr>
-                </c:forEach>
-            </tbody>
-        </table>
 
         <p>
-            <a href="<c:url value='/posts/new' />">新規投稿</a>
+            <a href="<c:url value='/login' />">ログイン</a>
         </p>
         <p>
-            <a href="<c:url value='/logout' />">ログアウト</a>
+            <a href="<c:url value='/users/new' />">新規ユーザ登録</a>
         </p>
     </c:param>
 </c:import>
