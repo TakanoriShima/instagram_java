@@ -3,7 +3,6 @@ package controllers.posts;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -61,26 +60,39 @@ public class PostsCreateServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 
-		// 画像アップロード
-		Part part = request.getPart("image");
+		String filename = "";
+		String filePath = "";
 
-		if (part.getSize() != 0) {
+		EntityManager em = DBUtil.createEntityManager();
 
-			// localに画像をアップロード
-			String filename = getFileName(part);
+		Post p = new Post();
 
-			String filePath = getServletContext().getRealPath("/photos/") + filename;
+		// レポート作成者のidを取得
+		User login_user = (User) request.getSession().getAttribute("login_user");
 
-			// System.out.println("filePath!!!" + filePath);
-			//
-			File uploadDir = new File(getServletContext().getRealPath("/photos/"));
-			if (!uploadDir.exists()) {
-				uploadDir.mkdir();
-			}
+		p.setUser(login_user);
 
-			part.write(filePath);
+		try {
 
-			try {
+			// 画像アップロード
+			Part part = request.getPart("image");
+
+			if (part.getSize() != 0) {
+
+				// localに画像をアップロード
+				filename = getFileName(part);
+
+				filePath = getServletContext().getRealPath("/photos/") + filename;
+
+				// System.out.println("filePath!!!" + filePath);
+				//
+				File uploadDir = new File(getServletContext().getRealPath("/photos/"));
+				if (!uploadDir.exists()) {
+					uploadDir.mkdir();
+				}
+
+				part.write(filePath);
+
 				/* S3 */
 				String region = (String) this.getServletContext().getAttribute("region");
 				String awsAccessKey = (String) this.getServletContext().getAttribute("awsAccessKey");
@@ -112,61 +124,47 @@ public class PostsCreateServlet extends HttpServlet {
 						"photos/" + filename,
 						// ファイルの実体
 						file);
-			} catch (Exception e) {
-				System.out.println("S3失敗");
 			}
+		} catch (Exception e) {
+			System.out.println("S3失敗");
+		}
 
-			// データベースに情報を保存
-			EntityManager em = DBUtil.createEntityManager();
+		// データベースに情報を保存
 
-			Post p = new Post();
+		p.setTitle(request.getParameter("title"));
+		p.setContent(request.getParameter("content"));
 
-			// レポート作成者のidを取得
-			User login_user = (User) request.getSession().getAttribute("login_user");
-			p.setUser(login_user);
+		p.setImage(filename);
 
-			p.setTitle(request.getParameter("title"));
-			p.setContent(request.getParameter("content"));
+		Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+		p.setCreated_at(currentTime);
 
-			p.setImage(filename);
+		List<String> errors = PostValidator.validate(p);
 
-			Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-			p.setCreated_at(currentTime);
+		if (errors.size() > 0) {
 
-			List<String> errors = PostValidator.validate(p);
-			System.out.println("ひひい");
-			if (errors.size() > 0) {
-				System.out.println("ふふふ");
-				em.close();
+			em.close();
 
-				request.setAttribute("_token", request.getSession().getId());
-				request.setAttribute("post", p);
-				request.setAttribute("errors", errors);
-				System.out.println("あああ");
+			request.setAttribute("_token", request.getSession().getId());
+			request.setAttribute("post", p);
+			request.setAttribute("errors", errors);
 
-				RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
-				rd.forward(request, response);
-			} else {
-				em.getTransaction().begin();
-				em.persist(p);
-				em.getTransaction().commit();
-				em.close();
-
-				if (request.getSession().getAttribute("flush") != null) {
-					request.getSession().removeAttribute("flush");
-					request.getSession().setAttribute("flush", "新規投稿が完了しました。");
-				}
-
-				response.sendRedirect(request.getContextPath() + "/top");
-			}
-
-		} else {
-			List<String> errors = new ArrayList<>();
-			errors.add("画像を選択してください");
-			request.getSession().setAttribute("errors", errors);
 			RequestDispatcher rd = request.getRequestDispatcher("/WEB-INF/views/posts/new.jsp");
 			rd.forward(request, response);
+		} else {
+			em.getTransaction().begin();
+			em.persist(p);
+			em.getTransaction().commit();
+			em.close();
+
+			if (request.getSession().getAttribute("flush") != null) {
+				request.getSession().removeAttribute("flush");
+				request.getSession().setAttribute("flush", "新規投稿が完了しました。");
+			}
+
+			response.sendRedirect(request.getContextPath() + "/top");
 		}
+
 	}
 
 	// 拡張子を変えずに、ランダムな名前のファイルを生成する
