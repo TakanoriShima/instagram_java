@@ -169,3 +169,23 @@ h3 {
 img {
     width: 50%;
 }
+
+/* トップページ */
+h1{
+    border: solid 2px blue;
+    border-radius: 40px;
+    padding: 10px;
+}
+h2{
+    color: red;
+    background-color: pink;
+}
+img{
+    width: 100%;
+}
+h1.title{
+	border: none;
+}
+.message{
+	font-size: 30px;
+}

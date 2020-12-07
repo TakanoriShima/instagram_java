@@ -13,13 +13,14 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
         <link rel="stylesheet" href="<c:url value='/css/reset.css' />">
         <link rel="stylesheet" href="<c:url value='/css/style.css' />">
+        <link rel="shortcut icon" href="favicon.ico">
 
     </head>
     <body>
-        <div id="wrapper">
+        <div id="wrapper" class="container">
             <div id="header">
                 <div id="header_menu">
-                    <h1><a href="<c:url value='/' />">画像共有サイト</a></h1>&nbsp;&nbsp;&nbsp;
+                    <h1 class="title"><a href="<c:url value='/' />">画像投稿サイト</a></h1>&nbsp;&nbsp;&nbsp;
                     <c:if test="${sessionScope.login_employee != null}">
                         <c:if test="${sessionScope.login_employee.admin_flag == 1}">
                             <a href="<c:url value='/employees/index' />">従業員管理</a>&nbsp;&nbsp;
@@ -39,8 +40,9 @@
             <div id="content">
                 ${param.content}
             </div>
-            <div id="footer">
-                &copy; Takanor Shima.
+            <div id="footer" class="row mt-4">
+                <small class="col-sm-12 text-center">&copy; Takanor Shima.</small>
+
             </div>
         </div>
         <!-- Optional JavaScript -->

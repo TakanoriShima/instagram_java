@@ -6,19 +6,27 @@
 <c:import url="../layout/app.jsp">
     <c:param name="content">
         <c:if test="${flush != null}">
-            <div id="flush_success">
+            <div id="flush_success" class="row">
                 <c:out value="${flush}"></c:out>
             </div>
         </c:if>
 
-		<h1>画像共有アプリ</h1>
+		<div class="row mt-3">
+			<h3 class="col-sm-12 text-center message">会員登録して写真を共有しよう</h3>
+		</div>
+		<div class="row mt-5 mb-4">
+			<div class="offset-sm-3 col-sm-3 text-center mb-4">
+				<a href="<c:url value='/users/new' />" class="btn btn-primary col-sm-12">新規会員登録</a>
+			</div>
+			<div class="col-sm-3 mb-4">
+				<a href="<c:url value='/login' />" class="btn btn-primary col-sm-12">ログイン</a>
+			</div>
+		</div>
 
-
-        <p>
-            <a href="<c:url value='/login' />">ログイン</a>
-        </p>
-        <p>
-            <a href="<c:url value='/users/new' />">新規ユーザ登録</a>
-        </p>
+		<div class="row mt-4">
+			<c:forEach var="post" items="${posts}">
+				<div class="col-sm-3 mb-4"><img src="https://quark2galaxy2quark.s3.amazonaws.com/photos/${post.image}"></div>
+			</c:forEach>
+		</div>
     </c:param>
 </c:import>
